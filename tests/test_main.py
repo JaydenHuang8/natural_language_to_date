@@ -399,3 +399,17 @@ def test_mixed_before_yesterday_with_day():
         "2 years, 3 months, and 10 days before yesterday",
         today=date(2025, 12, 1),
     ) == date(2023, 8, 20)
+
+
+def test_the_day_after_tomorrow():
+    assert parse(
+        "the day after tomorrow",
+        today=date(2025, 5, 12),
+    ) == date(2025, 5, 14)
+
+
+def test_the_day_before_yesterday():
+    assert parse(
+        "the day before yesterday",
+        today=date(2025, 5, 12),
+    ) == date(2025, 5, 10)

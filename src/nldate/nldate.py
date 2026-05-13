@@ -125,10 +125,6 @@ def apply_parts(start: date, parts: list[tuple[int, str]], sign: int) -> date:
 
 
 def parse_parts(s: str) -> list[tuple[int, str]]:
-    # Turns:
-    # "1 year and 2 months"
-    # "1 year, 2 months, and 5 days"
-    # into comma-separated pieces.
     s = s.replace(", and ", ", ")
     s = s.replace(" and ", ", ")
 
@@ -154,6 +150,8 @@ def parse_parts(s: str) -> list[tuple[int, str]]:
 
 
 def parse_base_date(s: str, today: date, all_months: dict[str, int]) -> date | None:
+    s = s.strip().lower()
+
     parsed_date = parse_date_text(s, all_months)
     if parsed_date is not None:
         return parsed_date
@@ -166,6 +164,12 @@ def parse_base_date(s: str, today: date, all_months: dict[str, int]) -> date | N
 
     if s == "yesterday":
         return today - timedelta(days=1)
+
+    if s == "the day after tomorrow":
+        return today + timedelta(days=2)
+
+    if s == "the day before yesterday":
+        return today - timedelta(days=2)
 
     weekdays = {day.lower(): i for i, day in enumerate(calendar.day_name)}
 
@@ -217,14 +221,9 @@ def parse(s: str, today: date | None = None) -> date:
     if s == "":
         return today
 
-    if s == "today":
-        return today
-
-    if s == "tomorrow":
-        return today + timedelta(days=1)
-
-    if s == "yesterday":
-        return today - timedelta(days=1)
+    base_date = parse_base_date(s, today, all_months)
+    if base_date is not None:
+        return base_date
 
     match = re.fullmatch(r"in (\w+) (days?|weeks?|months?|years?)", s)
     if match:
@@ -244,15 +243,6 @@ def parse(s: str, today: date | None = None) -> date:
         unit = match.group(2)
         return move_date(today, -n, unit)
 
-    base_date = parse_base_date(s, today, all_months)
-    if base_date is not None:
-        return base_date
-
-    # Examples:
-    # "1 year and 2 months after yesterday"
-    # "1 year, 2 months, and 5 days before tomorrow"
-    # "1 year and 2 months after last friday"
-    # "2 years, 3 months, and 10 days after 2025-12-1"
     match = re.fullmatch(r"(.+) (before|after) (.+)", s)
     if match:
         parts_text = match.group(1)
