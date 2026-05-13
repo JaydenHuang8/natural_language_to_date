@@ -47,6 +47,38 @@ def test_in_num_years3():
     assert parse("in 2 year", today=date(2005, 1, 31)) == date(2007, 1, 31)
 
 
+def test_days_ago():
+    assert parse("2 days ago", today=date(2004, 12, 31)) == date(2004, 12, 29)
+
+
+def test_days_before():
+    assert parse("2 days before", today=date(2004, 12, 31)) == date(2004, 12, 29)
+
+
+def test_weeks_ago():
+    assert parse("1 week ago", today=date(2004, 12, 31)) == date(2004, 12, 24)
+
+
+def test_weeks_before():
+    assert parse("2 weeks before", today=date(2004, 12, 31)) == date(2004, 12, 17)
+
+
+def test_months_ago():
+    assert parse("a month ago", today=date(2004, 12, 31)) == date(2004, 11, 30)
+
+
+def test_months_before():
+    assert parse("2 months before", today=date(2004, 12, 31)) == date(2004, 10, 31)
+
+
+def test_years_ago():
+    assert parse("a year ago", today=date(2004, 12, 31)) == date(2003, 12, 31)
+
+
+def test_years_before():
+    assert parse("2 years ago", today=date(2004, 12, 31)) == date(2002, 12, 31)
+
+
 def test_days_after_a_date():
     assert parse("5 days after December 1st, 2025", today=date(2025, 12, 1)) == date(
         2025, 12, 6
