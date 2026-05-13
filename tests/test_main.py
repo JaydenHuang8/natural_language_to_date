@@ -301,3 +301,45 @@ def test_multiple_years_before():
     assert parse("10 years before January 15th, 2025", today=date(2025, 1, 15)) == date(
         2015, 1, 15
     )
+
+
+def test_years_months_before():
+    assert parse(
+        "2 years, 3 months before Dec. 1, 2025",
+        today=date(2025, 12, 1),
+    ) == date(2023, 9, 1)
+
+
+def test_years_months_after():
+    assert parse(
+        "2 years, 3 months after Dec. 1, 2025",
+        today=date(2025, 12, 1),
+    ) == date(2028, 3, 1)
+
+
+def test_years_months_days_before():
+    assert parse(
+        "1 year, 2 months, 5 days before December 15th, 2025",
+        today=date(2025, 12, 15),
+    ) == date(2024, 10, 10)
+
+
+def test_years_months_days_after():
+    assert parse(
+        "1 year, 2 months, 5 days after December 15th, 2025",
+        today=date(2025, 12, 15),
+    ) == date(2027, 2, 20)
+
+
+def test_mixed_with_month_rollover():
+    assert parse(
+        "1 year, 1 month after January 31st, 2024",
+        today=date(2024, 1, 31),
+    ) == date(2025, 2, 28)
+
+
+def test_mixed_before_with_leap_year():
+    assert parse(
+        "1 year, 1 month before March 31st, 2024",
+        today=date(2024, 3, 31),
+    ) == date(2023, 2, 28)

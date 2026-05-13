@@ -64,6 +64,8 @@ def make_month_dict() -> dict[str, int]:
 
 
 def parse_date_text(s: str, all_months: dict[str, int]) -> date | None:
+    s = s.strip().lower()
+
     # YYYY-M-D or YYYY/M/D
     match = re.fullmatch(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", s)
     if match:
@@ -116,6 +118,37 @@ def move_date(start: date, n: int, unit: str) -> date:
         return add_years(start, n)
 
     raise ValueError(f"Invalid unit: {unit}")
+
+
+def apply_parts(start: date, parts: list[tuple[int, str]], sign: int) -> date:
+    result = start
+
+    for n, unit in parts:
+        result = move_date(result, sign * n, unit)
+
+    return result
+
+
+def parse_parts(s: str) -> list[tuple[int, str]]:
+    parts = []
+
+    for part in s.split(","):
+        part = part.strip()
+
+        match = re.fullmatch(
+            r"(\w+) (days?|weeks?|months?|years?)",
+            part,
+        )
+
+        if not match:
+            raise ValueError(f"Invalid date part: {part}")
+
+        n = word_or_number_to_int(match.group(1))
+        unit = match.group(2)
+
+        parts.append((n, unit))
+
+    return parts
 
 
 def parse(s: str, today: date | None = None) -> date:
@@ -201,24 +234,27 @@ def parse(s: str, today: date | None = None) -> date:
     # 2 weeks after Dec. 3, 2025
     # 1 month after 2025-1-31
     # 10 years before 1/15/2025
+    # 1 year, 2 months, 5 days before December 15th, 2025
     match = re.fullmatch(
-        r"(\w+) (days?|weeks?|months?|years?) (before|after) (.+)",
+        r"(.+) (before|after) (.+)",
         s,
     )
     if match:
-        n = word_or_number_to_int(match.group(1))
-        unit = match.group(2)
-        direction = match.group(3)
-        date_part = match.group(4)
+        parts_text = match.group(1)
+        direction = match.group(2)
+        date_part = match.group(3)
 
         base_date = parse_date_text(date_part, all_months)
 
         if base_date is None:
             raise ValueError(f"Invalid date: {date_part}")
 
-        if direction == "before":
-            n = -n
+        parts = parse_parts(parts_text)
 
-        return move_date(base_date, n, unit)
+        sign = 1
+        if direction == "before":
+            sign = -1
+
+        return apply_parts(base_date, parts, sign)
 
     raise ValueError(f"Could not parse date string: {s}")
