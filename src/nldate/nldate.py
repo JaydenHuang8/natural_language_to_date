@@ -46,15 +46,20 @@ def parse(s: str, today: date | None = None) -> date:
 
     s = s.strip().lower()
 
-    months = {
-        month.lower(): i
-        for i, month in enumerate(calendar.month_name)
-        if month
+    # Full month names
+    months = {month.lower(): i for i, month in enumerate(calendar.month_name) if month}
+
+    # Short month names
+    short_months = {
+        month.lower(): i for i, month in enumerate(calendar.month_abbr) if month
     }
 
-    # -----------------------------
-    # ISO format: YYYY-M-D or YYYY/M/D
-    # -----------------------------
+    # Merge both dictionaries
+    all_months = months | short_months
+
+    # ---------------------------------
+    # YYYY-M-D or YYYY/M/D
+    # ---------------------------------
     match = re.fullmatch(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", s)
     if match:
         return date(
@@ -63,9 +68,9 @@ def parse(s: str, today: date | None = None) -> date:
             int(match.group(3)),
         )
 
-    # -----------------------------
-    # US format: M-D-YYYY or M/D/YYYY
-    # -----------------------------
+    # ---------------------------------
+    # M-D-YYYY or M/D/YYYY
+    # ---------------------------------
     match = re.fullmatch(r"(\d{1,2})[-/](\d{1,2})[-/](\d{4})", s)
     if match:
         return date(
@@ -74,10 +79,12 @@ def parse(s: str, today: date | None = None) -> date:
             int(match.group(2)),
         )
 
-    # -----------------------------
+    # ---------------------------------
     # "December 1, 2025"
     # "March 2nd, 2025"
-    # -----------------------------
+    # "Dec 3, 2025"
+    # "Nov 3rd, 2025"
+    # ---------------------------------
     match = re.fullmatch(
         r"([a-zA-Z]+) (\d+)(st|nd|rd|th)?, (\d{4})",
         s,
@@ -88,20 +95,20 @@ def parse(s: str, today: date | None = None) -> date:
         day = int(match.group(2))
         year = int(match.group(4))
 
-        if month_name not in months:
+        if month_name not in all_months:
             raise ValueError("Invalid month")
 
-        return date(year, months[month_name], day)
+        return date(year, all_months[month_name], day)
 
-    # -----------------------------
+    # ---------------------------------
     # Empty string
-    # -----------------------------
+    # ---------------------------------
     if s == "":
         return today
 
-    # -----------------------------
+    # ---------------------------------
     # Relative dates
-    # -----------------------------
+    # ---------------------------------
     if s == "today":
         return today
 
@@ -111,41 +118,38 @@ def parse(s: str, today: date | None = None) -> date:
     if s == "yesterday":
         return today - timedelta(days=1)
 
-    # -----------------------------
+    # ---------------------------------
     # "in 3 days"
-    # -----------------------------
+    # ---------------------------------
     match = re.fullmatch(r"in (\w+) days?", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         return today + timedelta(days=n)
 
-    # -----------------------------
+    # ---------------------------------
     # "in a week"
-    # -----------------------------
+    # ---------------------------------
     match = re.fullmatch(r"in (\w+) weeks?", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         return today + timedelta(weeks=n)
 
-    # -----------------------------
+    # ---------------------------------
     # "in two months"
-    # -----------------------------
+    # ---------------------------------
     match = re.fullmatch(r"in (\w+) months?", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         return add_months(today, n)
 
-    # -----------------------------
+    # ---------------------------------
     # "next tuesday"
-    # -----------------------------
+    # ---------------------------------
     match = re.fullmatch(r"next (\w+)", s)
     if match:
         weekday_name = match.group(1).capitalize()
 
-        weekdays = {
-            day: i
-            for i, day in enumerate(calendar.day_name)
-        }
+        weekdays = {day: i for i, day in enumerate(calendar.day_name)}
 
         if weekday_name not in weekdays:
             raise ValueError("Invalid weekday")
@@ -159,10 +163,10 @@ def parse(s: str, today: date | None = None) -> date:
 
         return today + timedelta(days=days_ahead)
 
-    # -----------------------------
+    # ---------------------------------
     # "5 days before December 1st, 2025"
     # "5 days after December 1st, 2025"
-    # -----------------------------
+    # ---------------------------------
     match = re.fullmatch(
         r"(\d+) days? (before|after) ([a-zA-Z]+) (\d+)(st|nd|rd|th), (\d{4})",
         s,
@@ -175,10 +179,10 @@ def parse(s: str, today: date | None = None) -> date:
         day = int(match.group(4))
         year = int(match.group(6))
 
-        if month_name not in months:
+        if month_name not in all_months:
             raise ValueError("Invalid month")
 
-        target_date = date(year, months[month_name], day)
+        target_date = date(year, all_months[month_name], day)
 
         if direction == "before":
             return target_date - timedelta(days=n)
