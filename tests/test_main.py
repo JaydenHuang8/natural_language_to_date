@@ -57,3 +57,12 @@ def test_single_digit_month_day_slash_us_format():
 
 def test_single_digit_month_day_dash_us_format():
     assert parse("2-5-2025") == date(2025, 2, 5)
+
+def test_word_digit_dates():
+    assert parse("December 1, 2025") == date(2025, 12, 1)
+
+def test_word_digit_dates_2():
+    assert parse("March 2nd, 2025") == date(2025, 3, 2)
+
+def test_word_digit_dates_3():
+    assert parse("April 3rd, 2025") == date(2025, 4, 3)

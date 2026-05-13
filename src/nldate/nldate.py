@@ -33,6 +33,7 @@ def add_months(start: date, months: int) -> date:
     new_year = start.year + (new_month - 1) // 12
     new_month = (new_month - 1) % 12 + 1
 
+    # closest valid day in target month
     last_day = calendar.monthrange(new_year, new_month)[1]
     new_day = min(start.day, last_day)
 
@@ -45,6 +46,15 @@ def parse(s: str, today: date | None = None) -> date:
 
     s = s.strip().lower()
 
+    months = {
+        month.lower(): i
+        for i, month in enumerate(calendar.month_name)
+        if month
+    }
+
+    # -----------------------------
+    # ISO format: YYYY-M-D or YYYY/M/D
+    # -----------------------------
     match = re.fullmatch(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", s)
     if match:
         return date(
@@ -53,6 +63,9 @@ def parse(s: str, today: date | None = None) -> date:
             int(match.group(3)),
         )
 
+    # -----------------------------
+    # US format: M-D-YYYY or M/D/YYYY
+    # -----------------------------
     match = re.fullmatch(r"(\d{1,2})[-/](\d{1,2})[-/](\d{4})", s)
     if match:
         return date(
@@ -61,9 +74,34 @@ def parse(s: str, today: date | None = None) -> date:
             int(match.group(2)),
         )
 
+    # -----------------------------
+    # "December 1, 2025"
+    # "March 2nd, 2025"
+    # -----------------------------
+    match = re.fullmatch(
+        r"([a-zA-Z]+) (\d+)(st|nd|rd|th)?, (\d{4})",
+        s,
+    )
+
+    if match:
+        month_name = match.group(1).lower()
+        day = int(match.group(2))
+        year = int(match.group(4))
+
+        if month_name not in months:
+            raise ValueError("Invalid month")
+
+        return date(year, months[month_name], day)
+
+    # -----------------------------
+    # Empty string
+    # -----------------------------
     if s == "":
         return today
 
+    # -----------------------------
+    # Relative dates
+    # -----------------------------
     if s == "today":
         return today
 
@@ -73,21 +111,33 @@ def parse(s: str, today: date | None = None) -> date:
     if s == "yesterday":
         return today - timedelta(days=1)
 
+    # -----------------------------
+    # "in 3 days"
+    # -----------------------------
     match = re.fullmatch(r"in (\w+) days?", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         return today + timedelta(days=n)
 
+    # -----------------------------
+    # "in a week"
+    # -----------------------------
     match = re.fullmatch(r"in (\w+) weeks?", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         return today + timedelta(weeks=n)
 
+    # -----------------------------
+    # "in two months"
+    # -----------------------------
     match = re.fullmatch(r"in (\w+) months?", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         return add_months(today, n)
 
+    # -----------------------------
+    # "next tuesday"
+    # -----------------------------
     match = re.fullmatch(r"next (\w+)", s)
     if match:
         weekday_name = match.group(1).capitalize()
@@ -101,6 +151,7 @@ def parse(s: str, today: date | None = None) -> date:
             raise ValueError("Invalid weekday")
 
         target = weekdays[weekday_name]
+
         days_ahead = (target - today.weekday()) % 7
 
         if days_ahead == 0:
@@ -108,6 +159,10 @@ def parse(s: str, today: date | None = None) -> date:
 
         return today + timedelta(days=days_ahead)
 
+    # -----------------------------
+    # "5 days before December 1st, 2025"
+    # "5 days after December 1st, 2025"
+    # -----------------------------
     match = re.fullmatch(
         r"(\d+) days? (before|after) ([a-zA-Z]+) (\d+)(st|nd|rd|th), (\d{4})",
         s,
@@ -120,11 +175,8 @@ def parse(s: str, today: date | None = None) -> date:
         day = int(match.group(4))
         year = int(match.group(6))
 
-        months = {
-            month.lower(): i
-            for i, month in enumerate(calendar.month_name)
-            if month
-        }
+        if month_name not in months:
+            raise ValueError("Invalid month")
 
         target_date = date(year, months[month_name], day)
 
