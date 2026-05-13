@@ -93,3 +93,11 @@ def test_word_digit_dates_short():
 
 def test_word_digit_dates_short_2():
     assert parse("Nov 3rd, 2025") == date(2025, 11, 3)
+
+
+def test_word_digit_dates_short_period_indicator():
+    assert parse("Dec. 3, 2025") == date(2025, 12, 3)
+
+
+def test_word_digit_dates_short_period_indicator_2():
+    assert parse("Feb. 12, 2025") == date(2025, 2, 12)
