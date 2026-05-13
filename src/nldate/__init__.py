@@ -1,1 +1,1 @@
-from .nldate import parse
+from .nldate import parse as parse
