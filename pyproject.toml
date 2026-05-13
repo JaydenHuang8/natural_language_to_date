@@ -1,5 +1,5 @@
 [project]
-name = "nl-to-date"
+name = "nldate"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -12,3 +12,10 @@ dev = [
     "pytest>=9.0.3",
     "ruff>=0.15.12",
 ]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
