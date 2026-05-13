@@ -343,3 +343,59 @@ def test_mixed_before_with_leap_year():
         "1 year, 1 month before March 31st, 2024",
         today=date(2024, 3, 31),
     ) == date(2023, 2, 28)
+
+
+def test_years_months_after_yesterday():
+    assert parse(
+        "1 year and 2 months after yesterday",
+        today=date(2025, 12, 1),
+    ) == date(2027, 1, 30)
+
+
+def test_years_months_before_tomorrow():
+    assert parse(
+        "1 year and 2 months before tomorrow",
+        today=date(2025, 12, 1),
+    ) == date(2024, 10, 2)
+
+
+def test_years_months_days_after_yesterday():
+    assert parse(
+        "1 year, 2 months, and 5 days after yesterday",
+        today=date(2025, 12, 1),
+    ) == date(2027, 2, 4)
+
+
+def test_years_months_days_before_tomorrow():
+    assert parse(
+        "1 year, 2 months, and 5 days before tomorrow",
+        today=date(2025, 12, 1),
+    ) == date(2024, 9, 27)
+
+
+def test_mixed_after_last_friday():
+    assert parse(
+        "1 year and 2 months after last friday",
+        today=date(2025, 12, 1),  # Monday; last Friday is 2025-11-28
+    ) == date(2027, 1, 28)
+
+
+def test_mixed_before_last_friday():
+    assert parse(
+        "1 year and 2 months before last friday",
+        today=date(2025, 12, 1),  # Monday; last Friday is 2025-11-28
+    ) == date(2024, 9, 28)
+
+
+def test_mixed_after_tomorrow_with_day():
+    assert parse(
+        "2 years, 3 months, and 10 days after tomorrow",
+        today=date(2025, 12, 1),
+    ) == date(2028, 3, 12)
+
+
+def test_mixed_before_yesterday_with_day():
+    assert parse(
+        "2 years, 3 months, and 10 days before yesterday",
+        today=date(2025, 12, 1),
+    ) == date(2023, 8, 20)

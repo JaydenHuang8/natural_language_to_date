@@ -66,7 +66,6 @@ def make_month_dict() -> dict[str, int]:
 def parse_date_text(s: str, all_months: dict[str, int]) -> date | None:
     s = s.strip().lower()
 
-    # YYYY-M-D or YYYY/M/D
     match = re.fullmatch(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", s)
     if match:
         return date(
@@ -75,7 +74,6 @@ def parse_date_text(s: str, all_months: dict[str, int]) -> date | None:
             int(match.group(3)),
         )
 
-    # M-D-YYYY or M/D/YYYY
     match = re.fullmatch(r"(\d{1,2})[-/](\d{1,2})[-/](\d{4})", s)
     if match:
         return date(
@@ -84,9 +82,6 @@ def parse_date_text(s: str, all_months: dict[str, int]) -> date | None:
             int(match.group(2)),
         )
 
-    # December 1, 2025
-    # Dec 3rd, 2025
-    # Feb. 12, 2025
     match = re.fullmatch(
         r"([a-zA-Z]+\.?) (\d+)(st|nd|rd|th)?, (\d{4})",
         s,
@@ -130,6 +125,13 @@ def apply_parts(start: date, parts: list[tuple[int, str]], sign: int) -> date:
 
 
 def parse_parts(s: str) -> list[tuple[int, str]]:
+    # Turns:
+    # "1 year and 2 months"
+    # "1 year, 2 months, and 5 days"
+    # into comma-separated pieces.
+    s = s.replace(", and ", ", ")
+    s = s.replace(" and ", ", ")
+
     parts = []
 
     for part in s.split(","):
@@ -151,6 +153,55 @@ def parse_parts(s: str) -> list[tuple[int, str]]:
     return parts
 
 
+def parse_base_date(s: str, today: date, all_months: dict[str, int]) -> date | None:
+    parsed_date = parse_date_text(s, all_months)
+    if parsed_date is not None:
+        return parsed_date
+
+    if s == "today":
+        return today
+
+    if s == "tomorrow":
+        return today + timedelta(days=1)
+
+    if s == "yesterday":
+        return today - timedelta(days=1)
+
+    weekdays = {day.lower(): i for i, day in enumerate(calendar.day_name)}
+
+    match = re.fullmatch(r"last (\w+)", s)
+    if match:
+        weekday_name = match.group(1)
+
+        if weekday_name not in weekdays:
+            raise ValueError("Invalid weekday")
+
+        target = weekdays[weekday_name]
+        days_back = (today.weekday() - target) % 7
+
+        if days_back == 0:
+            days_back = 7
+
+        return today - timedelta(days=days_back)
+
+    match = re.fullmatch(r"next (\w+)", s)
+    if match:
+        weekday_name = match.group(1)
+
+        if weekday_name not in weekdays:
+            raise ValueError("Invalid weekday")
+
+        target = weekdays[weekday_name]
+        days_ahead = (target - today.weekday()) % 7
+
+        if days_ahead == 0:
+            days_ahead = 7
+
+        return today + timedelta(days=days_ahead)
+
+    return None
+
+
 def parse(s: str, today: date | None = None) -> date:
     if today is None:
         today = date.today()
@@ -158,8 +209,6 @@ def parse(s: str, today: date | None = None) -> date:
     s = s.strip().lower()
 
     all_months = make_month_dict()
-
-    weekdays = {day.lower(): i for i, day in enumerate(calendar.day_name)}
 
     parsed_date = parse_date_text(s, all_months)
     if parsed_date is not None:
@@ -177,77 +226,43 @@ def parse(s: str, today: date | None = None) -> date:
     if s == "yesterday":
         return today - timedelta(days=1)
 
-    # in 3 days / in a week / in two months / in 1 year
     match = re.fullmatch(r"in (\w+) (days?|weeks?|months?|years?)", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         unit = match.group(2)
         return move_date(today, n, unit)
 
-    # a day from now / 10 weeks from now / 1 month from now
     match = re.fullmatch(r"(\w+) (days?|weeks?|months?|years?) from now", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         unit = match.group(2)
         return move_date(today, n, unit)
 
-    # 2 days ago / 2 weeks before / a month ago / 2 year ago
     match = re.fullmatch(r"(\w+) (days?|weeks?|months?|years?) (ago|before)", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         unit = match.group(2)
         return move_date(today, -n, unit)
 
-    # next tuesday
-    match = re.fullmatch(r"next (\w+)", s)
-    if match:
-        weekday_name = match.group(1)
+    base_date = parse_base_date(s, today, all_months)
+    if base_date is not None:
+        return base_date
 
-        if weekday_name not in weekdays:
-            raise ValueError("Invalid weekday")
-
-        target = weekdays[weekday_name]
-        days_ahead = (target - today.weekday()) % 7
-
-        if days_ahead == 0:
-            days_ahead = 7
-
-        return today + timedelta(days=days_ahead)
-
-    # last friday
-    match = re.fullmatch(r"last (\w+)", s)
-    if match:
-        weekday_name = match.group(1)
-
-        if weekday_name not in weekdays:
-            raise ValueError("Invalid weekday")
-
-        target = weekdays[weekday_name]
-        days_back = (today.weekday() - target) % 7
-
-        if days_back == 0:
-            days_back = 7
-
-        return today - timedelta(days=days_back)
-
-    # 5 days before December 1st, 2025
-    # 2 weeks after Dec. 3, 2025
-    # 1 month after 2025-1-31
-    # 10 years before 1/15/2025
-    # 1 year, 2 months, 5 days before December 15th, 2025
-    match = re.fullmatch(
-        r"(.+) (before|after) (.+)",
-        s,
-    )
+    # Examples:
+    # "1 year and 2 months after yesterday"
+    # "1 year, 2 months, and 5 days before tomorrow"
+    # "1 year and 2 months after last friday"
+    # "2 years, 3 months, and 10 days after 2025-12-1"
+    match = re.fullmatch(r"(.+) (before|after) (.+)", s)
     if match:
         parts_text = match.group(1)
         direction = match.group(2)
-        date_part = match.group(3)
+        base_text = match.group(3)
 
-        base_date = parse_date_text(date_part, all_months)
+        base_date = parse_base_date(base_text, today, all_months)
 
         if base_date is None:
-            raise ValueError(f"Invalid date: {date_part}")
+            raise ValueError(f"Invalid date: {base_text}")
 
         parts = parse_parts(parts_text)
 
