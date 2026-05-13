@@ -47,24 +47,23 @@ def add_years(start: date, years: int) -> date:
     return date(new_year, start.month, new_day)
 
 
-def parse(s: str, today: date | None = None) -> date:
-    if today is None:
-        today = date.today()
-
-    s = s.strip().lower()
-
-    months = {month.lower(): i for i, month in enumerate(calendar.month_name) if month}
+def make_month_dict() -> dict[str, int]:
+    full_months = {
+        month.lower(): i for i, month in enumerate(calendar.month_name) if month
+    }
 
     short_months = {
         month.lower(): i for i, month in enumerate(calendar.month_abbr) if month
     }
 
-    short_months_with_period = {f"{k}.": v for k, v in short_months.items()}
+    short_months_with_period = {
+        f"{month}.": number for month, number in short_months.items()
+    }
 
-    all_months = months | short_months | short_months_with_period
+    return full_months | short_months | short_months_with_period
 
-    weekdays = {day.lower(): i for i, day in enumerate(calendar.day_name)}
 
+def parse_date_text(s: str, all_months: dict[str, int]) -> date | None:
     # YYYY-M-D or YYYY/M/D
     match = re.fullmatch(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", s)
     if match:
@@ -83,7 +82,9 @@ def parse(s: str, today: date | None = None) -> date:
             int(match.group(2)),
         )
 
-    # December 1, 2025 / Dec. 3, 2025 / March 2nd, 2025
+    # December 1, 2025
+    # Dec 3rd, 2025
+    # Feb. 12, 2025
     match = re.fullmatch(
         r"([a-zA-Z]+\.?) (\d+)(st|nd|rd|th)?, (\d{4})",
         s,
@@ -97,6 +98,39 @@ def parse(s: str, today: date | None = None) -> date:
             raise ValueError("Invalid month")
 
         return date(year, all_months[month_name], day)
+
+    return None
+
+
+def move_date(start: date, n: int, unit: str) -> date:
+    if unit.startswith("day"):
+        return start + timedelta(days=n)
+
+    if unit.startswith("week"):
+        return start + timedelta(weeks=n)
+
+    if unit.startswith("month"):
+        return add_months(start, n)
+
+    if unit.startswith("year"):
+        return add_years(start, n)
+
+    raise ValueError(f"Invalid unit: {unit}")
+
+
+def parse(s: str, today: date | None = None) -> date:
+    if today is None:
+        today = date.today()
+
+    s = s.strip().lower()
+
+    all_months = make_month_dict()
+
+    weekdays = {day.lower(): i for i, day in enumerate(calendar.day_name)}
+
+    parsed_date = parse_date_text(s, all_months)
+    if parsed_date is not None:
+        return parsed_date
 
     if s == "":
         return today
@@ -115,54 +149,21 @@ def parse(s: str, today: date | None = None) -> date:
     if match:
         n = word_or_number_to_int(match.group(1))
         unit = match.group(2)
+        return move_date(today, n, unit)
 
-        if unit.startswith("day"):
-            return today + timedelta(days=n)
-
-        if unit.startswith("week"):
-            return today + timedelta(weeks=n)
-
-        if unit.startswith("month"):
-            return add_months(today, n)
-
-        if unit.startswith("year"):
-            return add_years(today, n)
-
-    # a day from now / 10 week from now / 1 month from now
+    # a day from now / 10 weeks from now / 1 month from now
     match = re.fullmatch(r"(\w+) (days?|weeks?|months?|years?) from now", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         unit = match.group(2)
-
-        if unit.startswith("day"):
-            return today + timedelta(days=n)
-
-        if unit.startswith("week"):
-            return today + timedelta(weeks=n)
-
-        if unit.startswith("month"):
-            return add_months(today, n)
-
-        if unit.startswith("year"):
-            return add_years(today, n)
+        return move_date(today, n, unit)
 
     # 2 days ago / 2 weeks before / a month ago / 2 year ago
     match = re.fullmatch(r"(\w+) (days?|weeks?|months?|years?) (ago|before)", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         unit = match.group(2)
-
-        if unit.startswith("day"):
-            return today - timedelta(days=n)
-
-        if unit.startswith("week"):
-            return today - timedelta(weeks=n)
-
-        if unit.startswith("month"):
-            return add_months(today, -n)
-
-        if unit.startswith("year"):
-            return add_years(today, -n)
+        return move_date(today, -n, unit)
 
     # next tuesday
     match = re.fullmatch(r"next (\w+)", s)
@@ -197,27 +198,27 @@ def parse(s: str, today: date | None = None) -> date:
         return today - timedelta(days=days_back)
 
     # 5 days before December 1st, 2025
-    # 5 days after December 1st, 2025
+    # 2 weeks after Dec. 3, 2025
+    # 1 month after 2025-1-31
+    # 10 years before 1/15/2025
     match = re.fullmatch(
-        r"(\d+) days? (before|after) ([a-zA-Z]+\.?) "
-        r"(\d+)(st|nd|rd|th), (\d{4})",
+        r"(\w+) (days?|weeks?|months?|years?) (before|after) (.+)",
         s,
     )
     if match:
-        n = int(match.group(1))
-        direction = match.group(2)
-        month_name = match.group(3).lower()
-        day = int(match.group(4))
-        year = int(match.group(6))
+        n = word_or_number_to_int(match.group(1))
+        unit = match.group(2)
+        direction = match.group(3)
+        date_part = match.group(4)
 
-        if month_name not in all_months:
-            raise ValueError("Invalid month")
+        base_date = parse_date_text(date_part, all_months)
 
-        target_date = date(year, all_months[month_name], day)
+        if base_date is None:
+            raise ValueError(f"Invalid date: {date_part}")
 
         if direction == "before":
-            return target_date - timedelta(days=n)
+            n = -n
 
-        return target_date + timedelta(days=n)
+        return move_date(base_date, n, unit)
 
     raise ValueError(f"Could not parse date string: {s}")

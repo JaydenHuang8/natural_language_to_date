@@ -217,3 +217,87 @@ def test_last_weekday_wraparound():
 def test_last_friday_when_today_is_friday():
     today = date(2025, 5, 9)  # Friday
     assert parse("last friday", today=today) == date(2025, 5, 2)
+
+
+def test_weeks_after_a_date():
+    assert parse("2 weeks after December 1st, 2025", today=date(2025, 12, 1)) == date(
+        2025, 12, 15
+    )
+
+
+def test_weeks_before_a_date():
+    assert parse("2 weeks before December 1st, 2025", today=date(2025, 12, 1)) == date(
+        2025, 11, 17
+    )
+
+
+def test_months_after_a_date():
+    assert parse("2 months after December 1st, 2025", today=date(2025, 12, 1)) == date(
+        2026, 2, 1
+    )
+
+
+def test_months_before_a_date():
+    assert parse("2 months before December 1st, 2025", today=date(2025, 12, 1)) == date(
+        2025, 10, 1
+    )
+
+
+def test_month_after_31st_goes_to_latest_day():
+    assert parse("1 month after January 31st, 2025", today=date(2025, 1, 31)) == date(
+        2025, 2, 28
+    )
+
+
+def test_month_before_31st_goes_to_latest_day():
+    assert parse("1 month before March 31st, 2025", today=date(2025, 3, 31)) == date(
+        2025, 2, 28
+    )
+
+
+def test_month_after_31st_goes_to_30th():
+    assert parse("1 month after August 31st, 2025", today=date(2025, 8, 31)) == date(
+        2025, 9, 30
+    )
+
+
+def test_month_after_31st_leap_year():
+    assert parse("1 month after January 31st, 2024", today=date(2024, 1, 31)) == date(
+        2024, 2, 29
+    )
+
+
+def test_years_after_a_date():
+    assert parse("2 years after December 1st, 2025", today=date(2025, 12, 1)) == date(
+        2027, 12, 1
+    )
+
+
+def test_years_before_a_date():
+    assert parse("2 years before December 1st, 2025", today=date(2025, 12, 1)) == date(
+        2023, 12, 1
+    )
+
+
+def test_year_after_leap_day():
+    assert parse("1 year after February 29th, 2024", today=date(2024, 2, 29)) == date(
+        2025, 2, 28
+    )
+
+
+def test_year_before_leap_day():
+    assert parse("1 year before February 29th, 2024", today=date(2024, 2, 29)) == date(
+        2023, 2, 28
+    )
+
+
+def test_multiple_years_after():
+    assert parse("10 years after January 15th, 2025", today=date(2025, 1, 15)) == date(
+        2035, 1, 15
+    )
+
+
+def test_multiple_years_before():
+    assert parse("10 years before January 15th, 2025", today=date(2025, 1, 15)) == date(
+        2015, 1, 15
+    )
