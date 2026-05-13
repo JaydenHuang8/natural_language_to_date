@@ -2,6 +2,7 @@ from datetime import date, timedelta
 import re
 import calendar
 
+
 NUMBER_WORDS = {
     "a": 1,
     "one": 1,
@@ -44,6 +45,22 @@ def parse(s: str, today: date | None = None) -> date:
 
     s = s.strip().lower()
 
+    match = re.fullmatch(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", s)
+    if match:
+        return date(
+            int(match.group(1)),
+            int(match.group(2)),
+            int(match.group(3)),
+        )
+
+    match = re.fullmatch(r"(\d{1,2})[-/](\d{1,2})[-/](\d{4})", s)
+    if match:
+        return date(
+            int(match.group(3)),
+            int(match.group(1)),
+            int(match.group(2)),
+        )
+
     if s == "":
         return today
 
@@ -56,30 +73,29 @@ def parse(s: str, today: date | None = None) -> date:
     if s == "yesterday":
         return today - timedelta(days=1)
 
-    # "in 3 days", "in two days", "in a day"
     match = re.fullmatch(r"in (\w+) days?", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         return today + timedelta(days=n)
 
-    # "in a week", "in two weeks", "in 3 weeks"
     match = re.fullmatch(r"in (\w+) weeks?", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         return today + timedelta(weeks=n)
 
-    # "in two months", "in 2 months", "in a month"
     match = re.fullmatch(r"in (\w+) months?", s)
     if match:
         n = word_or_number_to_int(match.group(1))
         return add_months(today, n)
 
-    # "next tuesday"
     match = re.fullmatch(r"next (\w+)", s)
     if match:
         weekday_name = match.group(1).capitalize()
 
-        weekdays = {day: i for i, day in enumerate(calendar.day_name)}
+        weekdays = {
+            day: i
+            for i, day in enumerate(calendar.day_name)
+        }
 
         if weekday_name not in weekdays:
             raise ValueError("Invalid weekday")
@@ -92,8 +108,6 @@ def parse(s: str, today: date | None = None) -> date:
 
         return today + timedelta(days=days_ahead)
 
-    # "5 days before December 1st, 2025"
-    # "5 days after December 1st, 2025"
     match = re.fullmatch(
         r"(\d+) days? (before|after) ([a-zA-Z]+) (\d+)(st|nd|rd|th), (\d{4})",
         s,
@@ -107,17 +121,16 @@ def parse(s: str, today: date | None = None) -> date:
         year = int(match.group(6))
 
         months = {
-            month.lower(): i for i, month in enumerate(calendar.month_name) if month
+            month.lower(): i
+            for i, month in enumerate(calendar.month_name)
+            if month
         }
-
-        if month_name not in months:
-            raise ValueError("Invalid month")
 
         target_date = date(year, months[month_name], day)
 
         if direction == "before":
             return target_date - timedelta(days=n)
-        else:
-            return target_date + timedelta(days=n)
+
+        return target_date + timedelta(days=n)
 
     raise ValueError(f"Could not parse date string: {s}")
