@@ -149,7 +149,11 @@ def parse_parts(s: str) -> list[tuple[int, str]]:
     return parts
 
 
-def parse_base_date(s: str, today: date, all_months: dict[str, int]) -> date | None:
+def parse_base_date(
+    s: str,
+    today: date,
+    all_months: dict[str, int],
+) -> date | None:
     s = s.strip().lower()
 
     parsed_date = parse_date_text(s, all_months)
@@ -213,7 +217,7 @@ def parse(s: str, today: date | None = None) -> date:
     s = s.strip().lower()
 
     if s == "":
-        return today
+        raise ValueError("Empty date string")
 
     all_months = make_month_dict()
 

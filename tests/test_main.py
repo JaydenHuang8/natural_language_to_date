@@ -1,14 +1,10 @@
 from datetime import date, timedelta
-
+import pytest
 from nldate import parse
 
 
 def test_tomorrow():
     assert parse("tomorrow", today=None) == date.today() + timedelta(days=1)
-
-
-def test_empty_input():
-    assert parse("", today=None) == date.today()
 
 
 def test_date1():
@@ -416,4 +412,10 @@ def test_the_day_before_yesterday():
 
 
 def test_empty_string():
-    assert parse("") == date.today()
+    with pytest.raises(ValueError):
+        parse("")
+
+
+def test_whitespace_string():
+    with pytest.raises(ValueError):
+        parse("   ")
