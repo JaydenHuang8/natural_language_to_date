@@ -35,6 +35,18 @@ def test_in_num_months2():
     assert parse("in a month", today=date(2005, 1, 31)) == date(2005, 2, 28)
 
 
+def test_in_num_years():
+    assert parse("in a year", today=date(2005, 1, 31)) == date(2006, 1, 31)
+
+
+def test_in_num_years2():
+    assert parse("in 1 year", today=date(2005, 1, 31)) == date(2006, 1, 31)
+
+
+def test_in_num_years3():
+    assert parse("in 2 year", today=date(2005, 1, 31)) == date(2007, 1, 31)
+
+
 def test_days_after_a_date():
     assert parse("5 days after December 1st, 2025", today=date(2025, 12, 1)) == date(
         2025, 12, 6
