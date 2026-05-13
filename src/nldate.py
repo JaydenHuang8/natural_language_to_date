@@ -79,10 +79,7 @@ def parse(s: str, today: date | None = None) -> date:
     if match:
         weekday_name = match.group(1).capitalize()
 
-        weekdays = {
-            day: i
-            for i, day in enumerate(calendar.day_name)
-        }
+        weekdays = {day: i for i, day in enumerate(calendar.day_name)}
 
         if weekday_name not in weekdays:
             raise ValueError("Invalid weekday")
@@ -110,9 +107,7 @@ def parse(s: str, today: date | None = None) -> date:
         year = int(match.group(6))
 
         months = {
-            month.lower(): i
-            for i, month in enumerate(calendar.month_name)
-            if month
+            month.lower(): i for i, month in enumerate(calendar.month_name) if month
         }
 
         if month_name not in months:
