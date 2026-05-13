@@ -413,3 +413,7 @@ def test_the_day_before_yesterday():
         "the day before yesterday",
         today=date(2025, 5, 12),
     ) == date(2025, 5, 10)
+
+
+def test_empty_string():
+    assert parse("") == date.today()

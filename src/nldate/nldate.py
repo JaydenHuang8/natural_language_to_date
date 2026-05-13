@@ -212,14 +212,14 @@ def parse(s: str, today: date | None = None) -> date:
 
     s = s.strip().lower()
 
+    if s == "":
+        return today
+
     all_months = make_month_dict()
 
     parsed_date = parse_date_text(s, all_months)
     if parsed_date is not None:
         return parsed_date
-
-    if s == "":
-        return today
 
     base_date = parse_base_date(s, today, all_months)
     if base_date is not None:
