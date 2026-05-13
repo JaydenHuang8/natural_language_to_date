@@ -197,3 +197,23 @@ def test_word_digit_dates_short_period_indicator():
 
 def test_word_digit_dates_short_period_indicator_2():
     assert parse("Feb. 12, 2025") == date(2025, 2, 12)
+
+
+def test_last_friday():
+    today = date(2025, 5, 12)  # Monday
+    assert parse("last friday", today=today) == date(2025, 5, 9)
+
+
+def test_last_monday():
+    today = date(2025, 5, 15)  # Thursday
+    assert parse("last monday", today=today) == date(2025, 5, 12)
+
+
+def test_last_weekday_wraparound():
+    today = date(2025, 5, 11)  # Sunday
+    assert parse("last tuesday", today=today) == date(2025, 5, 6)
+
+
+def test_last_friday_when_today_is_friday():
+    today = date(2025, 5, 9)  # Friday
+    assert parse("last friday", today=today) == date(2025, 5, 2)

@@ -63,6 +63,8 @@ def parse(s: str, today: date | None = None) -> date:
 
     all_months = months | short_months | short_months_with_period
 
+    weekdays = {day.lower(): i for i, day in enumerate(calendar.day_name)}
+
     # YYYY-M-D or YYYY/M/D
     match = re.fullmatch(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})", s)
     if match:
@@ -165,9 +167,7 @@ def parse(s: str, today: date | None = None) -> date:
     # next tuesday
     match = re.fullmatch(r"next (\w+)", s)
     if match:
-        weekday_name = match.group(1).capitalize()
-
-        weekdays = {day: i for i, day in enumerate(calendar.day_name)}
+        weekday_name = match.group(1)
 
         if weekday_name not in weekdays:
             raise ValueError("Invalid weekday")
@@ -179,6 +179,22 @@ def parse(s: str, today: date | None = None) -> date:
             days_ahead = 7
 
         return today + timedelta(days=days_ahead)
+
+    # last friday
+    match = re.fullmatch(r"last (\w+)", s)
+    if match:
+        weekday_name = match.group(1)
+
+        if weekday_name not in weekdays:
+            raise ValueError("Invalid weekday")
+
+        target = weekdays[weekday_name]
+        days_back = (today.weekday() - target) % 7
+
+        if days_back == 0:
+            days_back = 7
+
+        return today - timedelta(days=days_back)
 
     # 5 days before December 1st, 2025
     # 5 days after December 1st, 2025
