@@ -79,6 +79,58 @@ def test_years_before():
     assert parse("2 years ago", today=date(2004, 12, 31)) == date(2002, 12, 31)
 
 
+def test_days_from():
+    assert parse("a day from now") == date.today() + timedelta(days=1)
+
+
+def test_days_from_2():
+    assert parse("1 day from now") == date.today() + timedelta(days=1)
+
+
+def test_days_from_3():
+    assert parse("10 day from now") == date.today() + timedelta(days=10)
+
+
+def test_weeks_from():
+    assert parse("a week from now") == date.today() + timedelta(days=7)
+
+
+def test_weeks_from_2():
+    assert parse("1 week from now") == date.today() + timedelta(days=7)
+
+
+def test_weeks_from_3():
+    assert parse("10 week from now") == date.today() + timedelta(days=7 * 10)
+
+
+def test_months_from():
+    assert parse("a month from now", today=date(2025, 1, 15)) == date(2025, 2, 15)
+
+
+def test_months_from_2():
+    assert parse("1 month from now", today=date(2025, 1, 15)) == date(2025, 2, 15)
+
+
+def test_months_from_3():
+    assert parse("10 months from now", today=date(2025, 1, 15)) == date(2025, 11, 15)
+
+
+def test_month_rollover():
+    assert parse("1 month from now", today=date(2025, 12, 15)) == date(2026, 1, 15)
+
+
+def test_years_from():
+    assert parse("a year from now", today=date(2025, 5, 12)) == date(2026, 5, 12)
+
+
+def test_years_from_2():
+    assert parse("1 year from now", today=date(2025, 5, 12)) == date(2026, 5, 12)
+
+
+def test_years_from_3():
+    assert parse("10 years from now", today=date(2025, 5, 12)) == date(2035, 5, 12)
+
+
 def test_days_after_a_date():
     assert parse("5 days after December 1st, 2025", today=date(2025, 12, 1)) == date(
         2025, 12, 6
